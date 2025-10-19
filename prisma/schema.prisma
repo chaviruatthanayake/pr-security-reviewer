@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Org {
+  id              Int      @id @default(autoincrement())
+  name            String
+  installation_id Int      @unique
+  created_at      DateTime @default(now())
+  repos           Repo[]
+}
+
+model Repo {
+  id             Int      @id @default(autoincrement())
+  org_id         Int
+  github_repo_id Int      @unique
+  name           String
+  created_at     DateTime @default(now())
+  org            Org      @relation(fields: [org_id], references: [id])
+  scans          Scan[]
+}
+
+model Scan {
+  id          Int       @id @default(autoincrement())
+  repo_id     Int
+  pr_number   Int
+  head_sha    String
+  status      String
+  started_at  DateTime
+  finished_at DateTime?
+  repo        Repo      @relation(fields: [repo_id], references: [id])
+  findings    Finding[]
+
+  @@index([repo_id, pr_number])
+  @@index([head_sha])
+}
+
+model Finding {
+  id            Int      @id @default(autoincrement())
+  scan_id       Int
+  rule_id       String
+  file          String
+  line          Int
+  severity      String
+  message       String
+  suggestion_md String   @db.Text
+  status        String
+  created_at    DateTime @default(now())
+  scan          Scan     @relation(fields: [scan_id], references: [id])
+
+  @@index([scan_id])
+}
